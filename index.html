@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartNotes - Cuaderno Digital de Física II</title>
-  <!-- Servidor P2P para conexiones directas entre Chromebooks -->
+  <title>Cuaderno Digital - Matemáticas III</title>
+  <!-- CDN de PeerJS: Túnel directo P2P para evadir bloqueos -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -13,92 +13,164 @@
       --text: #1e293b;
       --border: #cbd5e1;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-    
-    /* ENCABEZADO DE SEGURIDAD */
-    header { background: #1e293b; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.1rem; font-weight: 600; }
-    .panic-btn { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
-    
-    main { flex: 1; padding: 15px; overflow: hidden; display: flex; justify-content: center; }
-    
-    /* VISTA 1: MODO ESTUDIO (CAMUFLAJE) */
-    #modo-estudio { background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 900px; overflow-y: auto; }
-    .formula { background: #f1f5f9; padding: 12px; margin: 10px 0; border-left: 4px solid var(--primary); font-family: monospace; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* VISTA 2: MODO CHAT MULTI-AMIGOS */
-    #modo-chat { display: none; background: white; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 950px; height: 100%; }
-    
-    /* PANEL LATERAL: LISTA DE AMIGOS */
-    .sidebar { width: 280px; border-right: 1px solid var(--border); background: #f8fafc; display: flex; flex-direction: column; }
-    .my-code-box { padding: 12px; background: #e0f2fe; border-bottom: 1px solid #bae6fd; font-size: 0.85rem; }
+    /* AUTENTICACIÓN LOCAL (LOGIN / REGISTRO) */
+    #auth-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.95); display: flex;
+      justify-content: center; align-items: center; z-index: 1000;
+    }
+    .auth-card {
+      background: white; padding: 30px; border-radius: 12px; width: 340px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center;
+    }
+    .auth-card h2 { margin-bottom: 8px; font-size: 1.2rem; color: #0f172a; }
+    .auth-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+    .auth-card input {
+      width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border);
+      border-radius: 6px; outline: none; font-size: 0.9rem;
+    }
+    .auth-card button {
+      width: 100%; padding: 10px; background: var(--primary); color: white;
+      border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+    }
+
+    /* BARRA SUPERIOR Y MODO PÁNICO */
+    header { background: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    header h1 { font-size: 1rem; font-weight: 600; }
+    .panic-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+
+    main { flex: 1; padding: 15px; overflow: hidden; display: flex; justify-content: center; }
+
+    /* CAMUFLAJE: APUNTES DE MATEMÁTICAS III */
+    #modo-estudio { background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 900px; overflow-y: auto; }
+    .math-card { background: #f1f5f9; padding: 12px; margin: 10px 0; border-left: 4px solid var(--primary); font-family: 'Courier New', monospace; }
+
+    /* RED SOCIAL SECRETA */
+    #modo-chat { display: none; background: white; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 980px; height: 100%; }
+
+    /* BARRA LATERAL Y PERFIL */
+    .sidebar { width: 300px; border-right: 1px solid var(--border); background: #f8fafc; display: flex; flex-direction: column; }
+    .user-profile-box { padding: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #eff6ff; }
+    .avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); cursor: pointer; background: #e2e8f0; }
+    .user-info { flex: 1; overflow: hidden; }
+    .user-info .uname { font-weight: bold; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-info .upeer { font-size: 0.75rem; color: #64748b; }
+
     .add-friend-box { padding: 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px; }
     .add-friend-box input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 0.85rem; }
-    .btn-plus { background: var(--primary); color: white; border: none; width: 35px; height: 35px; border-radius: 6px; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    
+    .btn-plus { background: var(--primary); color: white; border: none; width: 35px; height: 35px; border-radius: 6px; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
+
     .friends-list { flex: 1; overflow-y: auto; }
-    .friend-item { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .friend-item { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
     .friend-item:hover { background: #e2e8f0; }
     .friend-item.active { background: #dbeafe; font-weight: bold; color: var(--primary); }
 
-    /* ÁREA PRINCIPAL DE CHAT */
-    .chat-area { flex: 1; display: flex; flex-direction: column; }
-    .chat-header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; background: #fff; }
+    /* ÁREA DE CONVERSACIÓN */
+    .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; }
+    .chat-header { padding: 12px 15px; border-bottom: 1px solid var(--border); font-weight: bold; background: #fff; display: flex; align-items: center; gap: 10px; }
     .messages-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
-    
-    .msg { max-width: 70%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; }
+
+    .msg { max-width: 70%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; position: relative; word-break: break-word; }
     .msg.mío { background: var(--primary); color: white; align-self: flex-end; }
     .msg.amigo { background: #e2e8f0; color: #0f172a; align-self: flex-start; }
     .msg.sistema { background: #fef08a; color: #854d0e; align-self: center; font-size: 0.8rem; text-align: center; }
 
-    .input-box { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: white; }
-    .input-box input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; }
-    .input-box button { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    /* STICKERS Y EMOJIS */
+    .msg-sticker-img { max-width: 150px; max-height: 150px; border-radius: 8px; display: block; margin-top: 4px; }
+    .btn-save-sticker { font-size: 0.7rem; background: rgba(0,0,0,0.6); color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-top: 4px; display: inline-block; }
+
+    .input-box { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; background: white; align-items: center; }
+    .input-box input { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 6px; outline: none; }
+    .input-box button { background: var(--primary); color: white; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-action { background: #f1f5f9; border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; }
+
+    /* PANEL FLOTANTE DE MULTIMEDIA */
+    .popup-panel { display: none; position: absolute; bottom: 60px; right: 15px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 290px; max-height: 260px; overflow-y: auto; z-index: 20; }
+    .emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; font-size: 1.4rem; text-align: center; cursor: pointer; }
+    .sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+    .sticker-grid img { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; }
   </style>
 </head>
 <body>
 
+  <!-- AUTENTICACIÓN (LOGIN / REGISTRO) -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <h2 id="auth-title">Acceso al Cuaderno</h2>
+      <p id="auth-desc">Ingresa tu contraseña para desbloquear los apuntes de Matemáticas III.</p>
+      <input type="text" id="auth-user" placeholder="Nombre de usuario">
+      <input type="password" id="auth-pass" placeholder="Contraseña secreta">
+      <button id="auth-btn" onclick="procesarAutenticacion()">Iniciar Sesión</button>
+    </div>
+  </div>
+
   <header>
-    <h1>📓 Física II - Apuntes de Laboratorio</h1>
-    <button class="panic-btn" onclick="toggleModo()">ESC / Cambiar Vista</button>
+    <h1>📐 Matemáticas III - Cálculo y Álgebra Lineal</h1>
+    <div>
+      <button class="panic-btn" onclick="toggleModo()">ESC / Cambiar Vista</button>
+    </div>
   </header>
 
   <main>
-    <!-- VISTA CAMUFLADA (FÍSICA) -->
+    <!-- VISTA CAMUFLADA (MATEMÁTICAS) -->
     <div id="modo-estudio">
-      <h2>Unidad 3: Cinemática y Dinámica de Partículas</h2>
-      <p style="margin-top: 8px; color: #64748b;">Ecuaciones para el informe semanal de laboratorio:</p>
-      <div class="formula">Velocidad final: v = v₀ + a · t</div>
-      <div class="formula">Segunda Ley de Newton: F = m · a</div>
-      <div class="formula">Trabajo y Energía: W = F · d · cos(θ)</div>
-      <p style="margin-top: 15px; font-size: 0.8rem; color: #94a3b8;">Presiona ESC para activar el entorno de comunicación directa.</p>
+      <h2>Unidad 2: Cálculo Diferencial e Integrales Definidas</h2>
+      <p style="margin-top: 8px; color: #64748b;">Fórmulas y ejercicios de apoyo para el examen parcial:</p>
+      <div class="math-card">Derivada de una potencia: d/dx (xⁿ) = n · xⁿ⁻¹</div>
+      <div class="math-card">Integral Indefinida: ∫ xⁿ dx = (xⁿ⁺¹ / n+1) + C</div>
+      <div class="math-card">Teorema Fundamental del Cálculo: ∫[a,b] f(x)dx = F(b) - F(a)</div>
+      <p style="margin-top: 15px; font-size: 0.8rem; color: #94a3b8;">Presiona ESC para alternar al panel de comunicación.</p>
     </div>
 
     <!-- VISTA CHAT SOCIAL -->
     <div id="modo-chat">
-      <!-- BARRA LATERAL -->
       <div class="sidebar">
-        <div class="my-code-box">
-          Mi ID: <strong id="mi-id" style="color: #2563eb;">Generando...</strong>
+        <!-- MI PERFIL -->
+        <div class="user-profile-box">
+          <img id="myAvatarDisplay" class="avatar-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" title="Haz clic para cambiar tu foto de perfil" onclick="document.getElementById('avatarFileInput').click()">
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="cambiarFotoPerfil(this)">
+          <div class="user-info">
+            <div class="uname" id="displayUsername">Usuario</div>
+            <div class="upeer">ID: <span id="myPeerId">Conectando...</span></div>
+          </div>
         </div>
-        <!-- INPUT Y BOTÓN DE MÁS DE AÑADIR AMIGOS -->
+
+        <!-- AGREGAR AMIGO (+ ) -->
         <div class="add-friend-box">
           <input type="text" id="id-amigo-input" placeholder="ID de tu amigo...">
           <button class="btn-plus" onclick="agregarAmigoDesdeInput()" title="Añadir amigo">+</button>
         </div>
-        <div class="friends-list" id="friendsList">
-          <!-- Lista de amigos cargada dinámicamente -->
-        </div>
+
+        <div class="friends-list" id="friendsList"></div>
       </div>
 
-      <!-- ÁREA DE CONVERSACIÓN -->
       <div class="chat-area">
         <div class="chat-header" id="chatTitle">Selecciona o añade un amigo con (+)</div>
         <div class="messages-box" id="messagesBox">
-          <div class="msg sistema">Escribe el ID de tu amigo en la barra lateral y presiona el botón (+) para iniciar el chat.</div>
+          <div class="msg sistema">Añade a un amigo con el botón (+) usando su ID de Peer para chatear.</div>
         </div>
+
+        <!-- POPUP EMOJIS Y STICKERS -->
+        <div id="popupPanel" class="popup-panel">
+          <strong style="font-size:0.8rem; color:#64748b;">EMOJIS</strong>
+          <div class="emoji-grid">
+            <span onclick="insertarEmoji('😀')">😀</span><span onclick="insertarEmoji('😂')">😂</span><span onclick="insertarEmoji('😎')">😎</span>
+            <span onclick="insertarEmoji('🔥')">🔥</span><span onclick="insertarEmoji('👍')">👍</span><span onclick="insertarEmoji('💀')">💀</span>
+          </div>
+          <hr style="margin: 10px 0; border: none; border-top: 1px solid #e2e8f0;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:0.8rem; color:#64748b;">MIS STICKERS</strong>
+            <button onclick="document.getElementById('stickerFileInput').click()" style="font-size:0.7rem; padding:2px 6px; cursor:pointer;">+ Subir</button>
+            <input type="file" id="stickerFileInput" accept="image/*" style="display:none" onchange="subirStickerDesdeArchivo(this)">
+          </div>
+          <div class="sticker-grid" id="savedStickersGrid"></div>
+        </div>
+
         <div class="input-box">
+          <button class="btn-action" onclick="togglePopup()">🎨</button>
           <input type="text" id="msgInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviarMensaje()">
           <button onclick="enviarMensaje()">Enviar</button>
         </div>
@@ -107,9 +179,63 @@
   </main>
 
   <script>
-    // 1. MODO PÁNICO (ESC)
+    // 1. AUTENTICACIÓN LOCAL PERMANENTE (LOCALSTORAGE)
+    let userData = JSON.parse(localStorage.getItem('smartnotes_user')) || null;
+
+    window.onload = () => {
+      const authTitle = document.getElementById('auth-title');
+      const authDesc = document.getElementById('auth-desc');
+      const authBtn = document.getElementById('auth-btn');
+
+      if (!userData) {
+        authTitle.innerText = "Registro Único de Alumno";
+        authDesc.innerText = "Crea tu usuario y contraseña. Solo lo harás la primera vez.";
+        authBtn.innerText = "Registrar y Guardar";
+      } else {
+        authTitle.innerText = "Iniciar Sesión";
+        authDesc.innerText = "Ingresa con tu usuario y contraseña registrados.";
+        authBtn.innerText = "Entrar al Cuaderno";
+      }
+    };
+
+    function procesarAutenticacion() {
+      const u = document.getElementById('auth-user').value.trim();
+      const p = document.getElementById('auth-pass').value.trim();
+
+      if (!u || !p) { alert("Ingresa usuario y contraseña."); return; }
+
+      if (!userData) {
+        // Guardar registro por primera vez
+        userData = {
+          username: u,
+          password: p,
+          avatar: document.getElementById('myAvatarDisplay').src,
+          stickers: []
+        };
+        localStorage.setItem('smartnotes_user', JSON.stringify(userData));
+        desbloquearApp();
+      } else {
+        // Validar inicio de sesión
+        if (u === userData.username && p === userData.password) {
+          desbloquearApp();
+        } else {
+          alert("Usuario o contraseña incorrectos.");
+        }
+      }
+    }
+
+    function desbloquearApp() {
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('displayUsername').innerText = userData.username;
+      if (userData.avatar) document.getElementById('myAvatarDisplay').src = userData.avatar;
+      renderizarStickersGuardados();
+      iniciarPeerJS();
+    }
+
+    // 2. MODO PÁNICO CON LA TECLA 'ESC'
     let enChat = false;
     function toggleModo() {
+      if (document.getElementById('auth-overlay').style.display !== 'none') return;
       enChat = !enChat;
       document.getElementById('modo-estudio').style.display = enChat ? 'none' : 'block';
       document.getElementById('modo-chat').style.display = enChat ? 'flex' : 'none';
@@ -117,143 +243,215 @@
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (document.getElementById('auth-overlay').style.display !== 'none') return;
         enChat = false;
         document.getElementById('modo-estudio').style.display = 'block';
         document.getElementById('modo-chat').style.display = 'none';
+        document.getElementById('popupPanel').style.display = 'none';
       }
     });
 
-    // 2. SISTEMA DE CHAT P2P MULTI-AMIGOS CON PEERJS
-    const peer = new Peer();
-    let amigos = {}; // Guarda conexiones y chats: { idAmigo: { conn, mensajes: [] } }
+    // 3. FOTO DE PERFIL PERMANENTE
+    function cambiarFotoPerfil(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imgData = e.target.result;
+          document.getElementById('myAvatarDisplay').src = imgData;
+          userData.avatar = imgData;
+          localStorage.setItem('smartnotes_user', JSON.stringify(userData));
+          
+          // Transmitir cambio de foto a amigos en tiempo real
+          Object.keys(amigos).forEach(id => {
+            if (amigos[id].conn) {
+              amigos[id].conn.send({ type: 'PROFILE_UPDATE', avatar: imgData, username: userData.username });
+            }
+          });
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // 4. CONEXIÓN P2P PEERJS (DESPLIEGUE INDETECTABLE)
+    let peer = null;
+    let amigos = {};
     let amigoActivoId = null;
 
-    // Obtener mi código de usuario
-    peer.on('open', (id) => {
-      document.getElementById('mi-id').innerText = id.substring(0, 6);
-    });
+    function iniciarPeerJS() {
+      peer = new Peer();
 
-    // Recibir llamada de conexión entrante de un compañero
-    peer.on('connection', (conn) => {
-      const friendId = conn.peer.substring(0, 6);
-      configurarConexion(conn, friendId);
-    });
+      peer.on('open', (id) => {
+        document.getElementById('myPeerId').innerText = id.substring(0, 6);
+      });
 
-    // BOTÓN (+): Añadir amigo y abrir su chat inmediatamente
+      peer.on('connection', (conn) => {
+        const friendId = conn.peer.substring(0, 6);
+        configurarConexion(conn, friendId);
+      });
+    }
+
     function agregarAmigoDesdeInput() {
       const input = document.getElementById('id-amigo-input');
       const friendId = input.value.trim();
-      
-      if (!friendId) {
-        alert("Escribe la ID de tu compañero primero.");
-        return;
-      }
+      if (!friendId) return;
 
-      if (amigos[friendId]) {
-        // Si ya existe, simplemente abrimos su chat
-        abrirChatAmigo(friendId);
-        input.value = '';
-        return;
-      }
+      if (amigos[friendId]) { abrirChatAmigo(friendId); input.value = ''; return; }
 
-      // Conectar con la otra Chromebook
       const conn = peer.connect(friendId);
       configurarConexion(conn, friendId);
       input.value = '';
     }
 
-    // Configura los eventos de mensaje entre Chromebooks
     function configurarConexion(conn, friendId) {
       conn.on('open', () => {
         if (!amigos[friendId]) {
-          amigos[friendId] = { conn: conn, mensajes: [] };
+          amigos[friendId] = { conn: conn, mensajes: [], avatar: null, name: friendId };
         } else {
           amigos[friendId].conn = conn;
         }
 
-        // Actualizar interfaz y mandar AL CHAT DEL AMIGO directo
+        // Transmitir perfil al conectar
+        conn.send({ type: 'PROFILE_UPDATE', avatar: userData.avatar, username: userData.username });
+
         renderizarListaAmigos();
         abrirChatAmigo(friendId);
-        agregarMensajeSistema(`¡Conectado directamente con ${friendId}!`);
       });
 
       conn.on('data', (data) => {
-        if (!amigos[friendId]) {
-          amigos[friendId] = { conn: conn, mensajes: [] };
-        }
-        amigos[friendId].mensajes.push({ texto: data, tipo: 'amigo' });
+        if (!amigos[friendId]) amigos[friendId] = { conn: conn, mensajes: [], avatar: null, name: friendId };
 
-        if (amigoActivoId === friendId) {
-          renderizarMensajes();
-        } else {
-          renderizarListaAmigos(); // Actualiza indicador
+        if (data.type === 'PROFILE_UPDATE') {
+          amigos[friendId].avatar = data.avatar;
+          amigos[friendId].name = data.username || friendId;
+          renderizarListaAmigos();
+          if (amigoActivoId === friendId) abrirChatAmigo(friendId);
+          return;
         }
+
+        amigos[friendId].mensajes.push(data);
+        if (amigoActivoId === friendId) renderizarMensajes();
+        else renderizarListaAmigos();
       });
     }
 
-    // Cambia la pantalla al chat del amigo seleccionado
     function abrirChatAmigo(friendId) {
       amigoActivoId = friendId;
-      document.getElementById('chatTitle').innerText = `💬 Chat con: ${friendId}`;
+      const amigo = amigos[friendId];
+      document.getElementById('chatTitle').innerText = `💬 Chat con: ${amigo?.name || friendId}`;
       renderizarListaAmigos();
       renderizarMensajes();
     }
 
-    // Renderiza los contactos en la barra lateral
     function renderizarListaAmigos() {
       const container = document.getElementById('friendsList');
       container.innerHTML = '';
-
       Object.keys(amigos).forEach(id => {
+        const a = amigos[id];
         const div = document.createElement('div');
         div.className = `friend-item ${id === amigoActivoId ? 'active' : ''}`;
-        div.innerHTML = `<span>👤 Amigo: <strong>${id}</strong></span>`;
+        const avatarSrc = a.avatar || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
+        div.innerHTML = `<img src="${avatarSrc}" class="avatar-img" style="width:28px;height:28px;"> <span><strong>${a.name}</strong></span>`;
         div.onclick = () => abrirChatAmigo(id);
         container.appendChild(div);
       });
     }
 
-    // Renderiza el historial de mensajes con el amigo actual
     function renderizarMensajes() {
       const box = document.getElementById('messagesBox');
       box.innerHTML = '';
-
       if (!amigoActivoId || !amigos[amigoActivoId]) return;
 
-      amigos[amigoActivoId].mensajes.forEach(msg => {
+      amigos[amigoActivoId].mensajes.forEach((msg) => {
         const div = document.createElement('div');
         div.className = `msg ${msg.tipo}`;
-        div.innerText = msg.texto;
+
+        if (msg.esSticker) {
+          div.innerHTML = `
+            <div>${msg.texto ? msg.texto : ''}</div>
+            <img src="${msg.stickerUrl}" class="msg-sticker-img">
+            ${msg.tipo === 'amigo' ? `<button class="btn-save-sticker" onclick="guardarStickerRecibido('${msg.stickerUrl}')">💾 Guardar Sticker</button>` : ''}
+          `;
+        } else {
+          div.innerText = msg.texto;
+        }
+
         box.appendChild(div);
       });
-
       box.scrollTop = box.scrollHeight;
     }
 
-    // Enviar un mensaje al amigo activo
     function enviarMensaje() {
       const input = document.getElementById('msgInput');
       const texto = input.value.trim();
+      if (!texto || !amigoActivoId || !amigos[amigoActivoId]?.conn) return;
 
-      if (!texto) return;
-      if (!amigoActivoId || !amigos[amigoActivoId] || !amigos[amigoActivoId].conn) {
-        alert("Añade un amigo con el botón (+) antes de enviar un mensaje.");
-        return;
-      }
-
-      // Enviar por el canal P2P
-      amigos[amigoActivoId].conn.send(texto);
-      amigos[amigoActivoId].mensajes.push({ texto: texto, tipo: 'mío' });
+      const pkg = { texto: texto, tipo: 'mío', esSticker: false };
+      amigos[amigoActivoId].conn.send({ texto: texto, tipo: 'amigo', esSticker: false });
+      amigos[amigoActivoId].mensajes.push(pkg);
 
       renderizarMensajes();
       input.value = '';
     }
 
-    function agregarMensajeSistema(texto) {
-      if (amigoActivoId && amigos[amigoActivoId]) {
-        amigos[amigoActivoId].mensajes.push({ texto: texto, tipo: 'sistema' });
-        renderizarMensajes();
+    // 5. MANEJO DE EMOJIS Y STICKERS DESDE ARCHIVOS
+    function togglePopup() {
+      const p = document.getElementById('popupPanel');
+      p.style.display = p.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function insertarEmoji(emoji) {
+      document.getElementById('msgInput').value += emoji;
+    }
+
+    function subirStickerDesdeArchivo(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const stickerData = e.target.result;
+          guardarStickerEnStorage(stickerData);
+          enviarSticker(stickerData);
+        };
+        reader.readAsDataURL(input.files[0]);
       }
+    }
+
+    function enviarSticker(stickerUrl) {
+      if (!amigoActivoId || !amigos[amigoActivoId]?.conn) {
+        alert("Añade a un amigo con (+) primero.");
+        return;
+      }
+      const pkg = { texto: '', stickerUrl: stickerUrl, tipo: 'mío', esSticker: true };
+      amigos[amigoActivoId].conn.send({ texto: '', stickerUrl: stickerUrl, tipo: 'amigo', esSticker: true });
+      amigos[amigoActivoId].mensajes.push(pkg);
+      renderizarMensajes();
+      document.getElementById('popupPanel').style.display = 'none';
+    }
+
+    function guardarStickerRecibido(url) {
+      guardarStickerEnStorage(url);
+      alert("¡Sticker guardado en tu panel!");
+    }
+
+    function guardarStickerEnStorage(url) {
+      if (!userData.stickers) userData.stickers = [];
+      if (!userData.stickers.includes(url)) {
+        userData.stickers.push(url);
+        localStorage.setItem('smartnotes_user', JSON.stringify(userData));
+        renderizarStickersGuardados();
+      }
+    }
+
+    function renderizarStickersGuardados() {
+      const grid = document.getElementById('savedStickersGrid');
+      grid.innerHTML = '';
+      if (!userData.stickers) return;
+
+      userData.stickers.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.onclick = () => enviarSticker(url);
+        grid.appendChild(img);
+      });
     }
   </script>
 </body>
