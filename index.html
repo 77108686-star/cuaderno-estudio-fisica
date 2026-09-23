@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cuaderno Digital - Matemáticas III</title>
-  <!-- CDN de PeerJS: Túnel directo P2P para evadir bloqueos -->
+  <!-- CDN de PeerJS: Túnel P2P directo entre Chromebooks -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     :root {
       --primary: #2563eb;
       --success: #10b981;
+      --warning: #f59e0b;
       --bg: #f8fafc;
       --text: #1e293b;
       --border: #cbd5e1;
@@ -17,47 +18,49 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* AUTENTICACIÓN LOCAL (DOS BOTONES) */
+    /* AUTENTICACIÓN / RESTAURACIÓN DE PERFIL */
     #auth-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(15, 23, 42, 0.95); display: flex;
       justify-content: center; align-items: center; z-index: 1000;
     }
     .auth-card {
-      background: white; padding: 30px; border-radius: 12px; width: 360px;
+      background: white; padding: 25px; border-radius: 12px; width: 360px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center;
     }
     .auth-card h2 { margin-bottom: 8px; font-size: 1.2rem; color: #0f172a; }
-    .auth-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
-    .auth-card input {
-      width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border);
-      border-radius: 6px; outline: none; font-size: 0.9rem;
+    .auth-card p { font-size: 0.8rem; color: #64748b; margin-bottom: 15px; }
+    .auth-card input, .auth-card textarea {
+      width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border);
+      border-radius: 6px; outline: none; font-size: 0.85rem;
     }
-    .auth-buttons { display: flex; gap: 10px; }
+    .auth-buttons { display: flex; gap: 8px; margin-bottom: 10px; }
     .btn-login { flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .btn-register { flex: 1; padding: 10px; background: var(--success); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-restore { width: 100%; padding: 8px; background: #64748b; color: white; border: none; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
 
-    /* BARRA SUPERIOR Y MODO PÁNICO */
+    /* BARRA SUPERIOR Y TECLA DE PÁNICO */
     header { background: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
     header h1 { font-size: 1rem; font-weight: 600; }
     .panic-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
 
     main { flex: 1; padding: 15px; overflow: hidden; display: flex; justify-content: center; }
 
-    /* CAMUFLAJE: APUNTES DE MATEMÁTICAS III */
+    /* CAMUFLAJE: VISTA DE APUNTES */
     #modo-estudio { background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 900px; overflow-y: auto; }
     .math-card { background: #f1f5f9; padding: 12px; margin: 10px 0; border-left: 4px solid var(--primary); font-family: 'Courier New', monospace; }
 
-    /* RED SOCIAL SECRETA */
+    /* MODO CHAT SECRET */
     #modo-chat { display: none; background: white; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 980px; height: 100%; }
 
-    /* BARRA LATERAL Y PERFIL */
+    /* BARRA LATERAL Y MI PERFIL */
     .sidebar { width: 300px; border-right: 1px solid var(--border); background: #f8fafc; display: flex; flex-direction: column; }
     .user-profile-box { padding: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #eff6ff; }
     .avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); cursor: pointer; background: #e2e8f0; }
     .user-info { flex: 1; overflow: hidden; }
     .user-info .uname { font-weight: bold; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-info .upeer { font-size: 0.75rem; color: #64748b; }
+    .btn-key { background: #dbeafe; color: var(--primary); border: 1px solid var(--primary); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; cursor: pointer; margin-top: 3px; display: inline-block; }
 
     .add-friend-box { padding: 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px; }
     .add-friend-box input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 0.85rem; }
@@ -78,7 +81,7 @@
     .msg.amigo { background: #e2e8f0; color: #0f172a; align-self: flex-start; }
     .msg.sistema { background: #fef08a; color: #854d0e; align-self: center; font-size: 0.8rem; text-align: center; }
 
-    /* STICKERS Y EMOJIS */
+    /* MULTIMEDIA Y STICKERS */
     .msg-sticker-img { max-width: 150px; max-height: 150px; border-radius: 8px; display: block; margin-top: 4px; }
     .btn-save-sticker { font-size: 0.7rem; background: rgba(0,0,0,0.6); color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-top: 4px; display: inline-block; }
 
@@ -87,7 +90,6 @@
     .input-box button { background: var(--primary); color: white; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .btn-action { background: #f1f5f9; border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; }
 
-    /* PANEL FLOTANTE DE MULTIMEDIA */
     .popup-panel { display: none; position: absolute; bottom: 60px; right: 15px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 290px; max-height: 260px; overflow-y: auto; z-index: 20; }
     .emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; font-size: 1.4rem; text-align: center; cursor: pointer; }
     .sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
@@ -96,16 +98,25 @@
 </head>
 <body>
 
-  <!-- AUTENTICACIÓN LOCAL (LOGIN / REGISTRO SEPARADOS) -->
+  <!-- ACCESO Y RESTAURACIÓN DE CUENTA -->
   <div id="auth-overlay">
     <div class="auth-card">
       <h2>Acceso al Cuaderno</h2>
-      <p>Ingresa tus datos para iniciar sesión o regístrate si es tu primera vez.</p>
+      <p>Ingresa tus datos, regístrate o restaura tu cuenta con tu llave de respaldo.</p>
+      
       <input type="text" id="auth-user" placeholder="Nombre de usuario">
       <input type="password" id="auth-pass" placeholder="Contraseña secreta">
+      
       <div class="auth-buttons">
         <button class="btn-register" onclick="registrarUsuario()">Registrarse</button>
         <button class="btn-login" onclick="iniciarSesionUsuario()">Iniciar Sesión</button>
+      </div>
+      
+      <button class="btn-restore" onclick="mostrarOpcionRestaurar()">🔑 Restaurar con Clave de Respaldo</button>
+      
+      <div id="restore-box" style="display:none; margin-top:10px;">
+        <textarea id="restore-key-input" rows="3" placeholder="Pega aquí tu clave de respaldo..."></textarea>
+        <button class="btn-login" style="width:100%;" onclick="restaurarDesdeClave()">Restaurar Perfil</button>
       </div>
     </div>
   </div>
@@ -128,20 +139,19 @@
       <p style="margin-top: 15px; font-size: 0.8rem; color: #94a3b8;">Presiona ESC para alternar al panel de comunicación.</p>
     </div>
 
-    <!-- VISTA CHAT SOCIAL -->
+    <!-- VISTA CHAT PRIVADO P2P -->
     <div id="modo-chat">
       <div class="sidebar">
-        <!-- MI PERFIL -->
         <div class="user-profile-box">
-          <img id="myAvatarDisplay" class="avatar-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" title="Haz clic para cambiar tu foto de perfil" onclick="document.getElementById('avatarFileInput').click()">
+          <img id="myAvatarDisplay" class="avatar-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" title="Haz clic para cambiar foto de perfil" onclick="document.getElementById('avatarFileInput').click()">
           <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="cambiarFotoPerfil(this)">
           <div class="user-info">
             <div class="uname" id="displayUsername">Usuario</div>
             <div class="upeer">ID: <span id="myPeerId">Conectando...</span></div>
+            <button class="btn-key" onclick="copiarClaveRespaldo()" title="Copia esto para no perder tu cuenta si la Chromebook se reinicia">📋 Copiar Clave</button>
           </div>
         </div>
 
-        <!-- AGREGAR AMIGO (+ ) -->
         <div class="add-friend-box">
           <input type="text" id="id-amigo-input" placeholder="ID de tu amigo...">
           <button class="btn-plus" onclick="agregarAmigoDesdeInput()" title="Añadir amigo">+</button>
@@ -156,7 +166,6 @@
           <div class="msg sistema">Añade a un amigo con el botón (+) usando su ID de Peer para chatear.</div>
         </div>
 
-        <!-- POPUP EMOJIS Y STICKERS -->
         <div id="popupPanel" class="popup-panel">
           <strong style="font-size:0.8rem; color:#64748b;">EMOJIS</strong>
           <div class="emoji-grid">
@@ -182,17 +191,51 @@
   </main>
 
   <script>
-    // 1. SISTEMA DE AUTENTICACIÓN CON REGISTRO E INICIO DE SESIÓN SEPARADOS
-    let userData = JSON.parse(localStorage.getItem('smartnotes_user')) || null;
+    // 1. SISTEMA DE AUTENTICACIÓN + DOBLE PERSISTENCIA (LOCALSTORAGE + INDEXEDDB)
+    let userData = null;
+
+    window.addEventListener('load', async () => {
+      userData = JSON.parse(localStorage.getItem('smartnotes_user')) || await leerIndexedDB();
+      if (userData) {
+        guardarEnAmbosTipos(userData);
+      }
+    });
+
+    function guardarEnAmbosTipos(data) {
+      localStorage.setItem('smartnotes_user', JSON.stringify(data));
+      guardarIndexedDB(data);
+    }
+
+    function guardarIndexedDB(data) {
+      const req = indexedDB.open("SmartNotesDB", 1);
+      req.onupgradeneeded = (e) => e.target.result.createObjectStore("user");
+      req.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("user", "readwrite");
+        tx.objectStore("user").put(data, "account");
+      };
+    }
+
+    function leerIndexedDB() {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("SmartNotesDB", 1);
+        req.onupgradeneeded = (e) => e.target.result.createObjectStore("user");
+        req.onsuccess = (e) => {
+          const db = e.target.result;
+          const tx = db.transaction("user", "readonly");
+          const getReq = tx.objectStore("user").get("account");
+          getReq.onsuccess = () => resolve(getReq.result || null);
+          getReq.onerror = () => resolve(null);
+        };
+        req.onerror = () => resolve(null);
+      });
+    }
 
     function registrarUsuario() {
       const u = document.getElementById('auth-user').value.trim();
       const p = document.getElementById('auth-pass').value.trim();
 
-      if (!u || !p) {
-        alert("Por favor ingresa un usuario y una contraseña para registrarte.");
-        return;
-      }
+      if (!u || !p) { alert("Ingresa un usuario y contraseña."); return; }
 
       userData = {
         username: u,
@@ -201,8 +244,8 @@
         stickers: []
       };
 
-      localStorage.setItem('smartnotes_user', JSON.stringify(userData));
-      alert("¡Cuenta registrada exitosamente en esta Chromebook!");
+      guardarEnAmbosTipos(userData);
+      alert("¡Cuenta creada! Haz clic en 'Copiar Clave' en tu perfil para tener una copia de seguridad.");
       desbloquearApp();
     }
 
@@ -210,21 +253,44 @@
       const u = document.getElementById('auth-user').value.trim();
       const p = document.getElementById('auth-pass').value.trim();
 
-      if (!u || !p) {
-        alert("Por favor ingresa tu usuario y contraseña.");
-        return;
-      }
-
-      if (!userData) {
-        alert("No hay ninguna cuenta registrada aún en esta Chromebook. Haz clic en 'Registrarse' primero.");
-        return;
-      }
+      if (!u || !p) { alert("Ingresa tu usuario y contraseña."); return; }
+      if (!userData) { alert("No se detecta cuenta guardada. Si el colegio la borró, usa 'Restaurar con Clave de Respaldo'."); return; }
 
       if (u === userData.username && p === userData.password) {
         desbloquearApp();
       } else {
         alert("Usuario o contraseña incorrectos.");
       }
+    }
+
+    function mostrarOpcionRestaurar() {
+      const box = document.getElementById('restore-box');
+      box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function restaurarDesdeClave() {
+      const keyStr = document.getElementById('restore-key-input').value.trim();
+      if (!keyStr) { alert("Pega la clave de respaldo."); return; }
+
+      try {
+        const data = JSON.parse(atob(keyStr));
+        if (data.username && data.password) {
+          userData = data;
+          guardarEnAmbosTipos(userData);
+          alert("¡Cuenta y stickers restaurados con éxito!");
+          desbloquearApp();
+        } else { throw new Error(); }
+      } catch (e) {
+        alert("Clave de respaldo inválida.");
+      }
+    }
+
+    function copiarClaveRespaldo() {
+      if (!userData) return;
+      const keyStr = btoa(JSON.stringify(userData));
+      navigator.clipboard.writeText(keyStr).then(() => {
+        alert("¡Clave de respaldo copiada! Pégala en un documento o bloc de notas. Si la Chromebook borra tus datos, solo la pegas en 'Restaurar' y recuperas todo.");
+      });
     }
 
     function desbloquearApp() {
@@ -235,7 +301,7 @@
       iniciarPeerJS();
     }
 
-    // 2. MODO PÁNICO CON LA TECLA 'ESC'
+    // 2. MODO PÁNICO (TECLA ESC)
     let enChat = false;
     function toggleModo() {
       if (document.getElementById('auth-overlay').style.display !== 'none') return;
@@ -262,9 +328,8 @@
           const imgData = e.target.result;
           document.getElementById('myAvatarDisplay').src = imgData;
           userData.avatar = imgData;
-          localStorage.setItem('smartnotes_user', JSON.stringify(userData));
+          guardarEnAmbosTipos(userData);
           
-          // Transmitir cambio de foto a amigos en tiempo real
           Object.keys(amigos).forEach(id => {
             if (amigos[id].conn) {
               amigos[id].conn.send({ type: 'PROFILE_UPDATE', avatar: imgData, username: userData.username });
@@ -275,7 +340,7 @@
       }
     }
 
-    // 4. CONEXIÓN P2P PEERJS (DESPLIEGUE INDETECTABLE)
+    // 4. CONEXIÓN P2P + HEARTBEAT (EVITAR DESCONEXIÓN CADA HORA)
     let peer = null;
     let amigos = {};
     let amigoActivoId = null;
@@ -285,12 +350,22 @@
 
       peer.on('open', (id) => {
         document.getElementById('myPeerId').innerText = id.substring(0, 6);
+        iniciarHeartbeat();
       });
 
       peer.on('connection', (conn) => {
         const friendId = conn.peer.substring(0, 6);
         configurarConexion(conn, friendId);
       });
+    }
+
+    // "PULSO" CADA 25 SEGUNDOS PARA MANTENER LA SESIÓN ACTIVA
+    function iniciarHeartbeat() {
+      setInterval(() => {
+        if (peer && !peer.destroyed && peer.socket && peer.socket.connected) {
+          peer.socket.send({ type: 'HEARTBEAT' });
+        }
+      }, 25000);
     }
 
     function agregarAmigoDesdeInput() {
@@ -313,9 +388,7 @@
           amigos[friendId].conn = conn;
         }
 
-        // Transmitir perfil al conectar
         conn.send({ type: 'PROFILE_UPDATE', avatar: userData.avatar, username: userData.username });
-
         renderizarListaAmigos();
         abrirChatAmigo(friendId);
       });
@@ -396,7 +469,7 @@
       input.value = '';
     }
 
-    // 5. MANEJO DE EMOJIS Y STICKERS DESDE ARCHIVOS
+    // 5. MANEJO DE EMOJIS Y STICKERS
     function togglePopup() {
       const p = document.getElementById('popupPanel');
       p.style.display = p.style.display === 'block' ? 'none' : 'block';
@@ -439,7 +512,7 @@
       if (!userData.stickers) userData.stickers = [];
       if (!userData.stickers.includes(url)) {
         userData.stickers.push(url);
-        localStorage.setItem('smartnotes_user', JSON.stringify(userData));
+        guardarEnAmbosTipos(userData);
         renderizarStickersGuardados();
       }
     }
