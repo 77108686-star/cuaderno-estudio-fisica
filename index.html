@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartNotes - Cuaderno Digital de Estudio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter & Caveat -->
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-handwriting { font-family: 'Caveat', cursive; }
+    .notebook-paper {
+      background-color: #ffffff;
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased h-screen overflow-hidden flex flex-col select-none">
+
+  <!-- REALISTIC PANIC SCREEN (DESPLIEGUE RÁPIDO CON TECLA ESC) -->
+  <div id="panic-screen" class="fixed inset-0 z-[100] bg-white p-8 overflow-y-auto hidden">
+    <div class="max-w-4xl mx-auto space-y-6 text-slate-900">
+      <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">I.E. PEDRO RUIZ GALLO - APUNTES OFICIALES</span>
+          <h1 class="text-2xl font-black">Física General y Mecánica Clásica - Clase #4</h1>
+        </div>
+        <button onclick="togglePanicMode()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded text-xs border border-slate-300">
+          <i class="fa-solid fa-eye-slash mr-1"></i> Volver
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6 text-sm">
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+          <h3 class="font-bold text-amber-700">1. Primera Ley de Newton (Inercia)</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Todo cuerpo permanece en su estado de reposo o de movimiento rectilíneo uniforme a menos que otros cuerpos actúen sobre él.
+          </p>
+          <div class="bg-white p-2 rounded border border-slate-300 text-center font-mono font-bold text-amber-900">
+            ∑ F = 0 ⇔ dv/dt = 0
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+          <h3 class="font-bold text-blue-700">2. Segunda Ley de Newton (Fuerza)</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            La fuerza neta aplicada sobre un cuerpo es proporcional a la aceleración que adquiere en su trayectoria.
+          </p>
+          <div class="bg-white p-2 rounded border border-slate-300 text-center font-mono font-bold text-blue-900">
+            F = m · a  |  [N] = [kg] · [m/s²]
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <h4 class="font-bold text-xs uppercase text-amber-900 mb-2">Ejercicio Resuelto en Pizarra:</h4>
+        <p class="text-xs font-mono text-slate-700 leading-normal">
+          Determinar la aceleración de un bloque de m = 5 kg sobre una superficie lisa al aplicar F = 25 N a 30°.<br>
+          Fx = F · cos(30°) = 25 · 0.866 = 21.65 N<br>
+          a = Fx / m = 21.65 / 5 = 4.33 m/s²
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTRATION / LOGIN MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center mx-auto text-2xl shadow-lg shadow-amber-500/30">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">Cuaderno SmartNotes</h2>
+        <p class="text-xs text-slate-500">Crea tu libreta de notas para sincronizar tus apuntes</p>
+      </div>
+
+      <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo</label>
+          <input type="text" id="auth-name" required placeholder="Ej. Carlos Mendoza" 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">ID de Estudiante / Usuario</label>
+          <input type="text" id="auth-username" required placeholder="Ej. carlos_pro" 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña de Protección</label>
+          <input type="password" id="auth-password" required placeholder="••••••••" 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Foto de Credencial / Perfil</label>
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center overflow-hidden">
+              <img id="avatar-preview-img" class="w-full h-full object-cover hidden" alt="Preview">
+              <i id="avatar-placeholder-icon" class="fa-solid fa-user-graduate text-slate-400 text-lg"></i>
+            </div>
+            <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 cursor-pointer transition flex items-center gap-2">
+              <i class="fa-solid fa-folder-open text-amber-600"></i> Seleccionar desde Archivos
+              <input type="file" accept="image/*" onchange="previewAuthAvatar(event)" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20 text-sm mt-2 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Guardar e Iniciar Sesión
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- UNLOCK MODAL FOR SAVED SESSIONS -->
+  <div id="unlock-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 hidden">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
+      <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-amber-300 shadow-sm">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-900" id="unlock-user-name">Cuaderno Protegido</h2>
+        <p class="text-xs text-slate-500">Ingresa tu contraseña para desbloquear tu libreta</p>
+      </div>
+      <form onsubmit="handleUnlockSubmit(event)" class="space-y-3 text-left">
+        <div>
+          <input type="password" id="unlock-password" required placeholder="Tu contraseña..." 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800">
+        </div>
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2 text-xs">
+          <i class="fa-solid fa-key"></i> Desbloquear Cuaderno
+        </button>
+      </form>
+      <button onclick="switchUser()" class="text-xs text-slate-500 hover:text-amber-600 underline pt-1 block mx-auto">Cambiar de Alumno / Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div id="edit-profile-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Foto de Credencial de Alumno</h3>
+      <div class="flex flex-col items-center gap-3">
+        <img id="edit-avatar-preview" src="" class="w-24 h-24 rounded-2xl object-cover border-2 border-amber-500 shadow-md">
+        <label class="bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 px-4 py-2 rounded-xl cursor-pointer border border-slate-300 transition flex items-center gap-2">
+          <i class="fa-solid fa-folder-open text-amber-600"></i> Cambiar desde Archivos Chromebook
+          <input type="file" accept="image/*" onchange="updateProfileAvatar(event)" class="hidden">
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeProfileModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION UI -->
+  <div id="main-ui" class="flex-1 flex flex-col h-full overflow-hidden hidden bg-slate-100">
+    
+    <header class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0 z-20 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-amber-500 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
+          <i class="fa-solid fa-book"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-sm text-slate-900 leading-tight">SmartNotes ClassLab</h1>
+            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">v2.4 Estudiantil</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Mis Cuadernos y Discusiones de Clase</p>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-1.5 w-72 text-xs">
+        <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
+        <input type="text" placeholder="Buscar en mis apuntes y grupos..." class="bg-transparent w-full focus:outline-none text-slate-700">
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="lockApp()" class="p-2 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 rounded-xl border border-slate-300 text-xs transition flex items-center gap-1.5" title="Bloquear Cuaderno">
+          <i class="fa-solid fa-lock text-amber-600"></i>
+          <span class="hidden sm:inline font-semibold">Bloquear</span>
+        </button>
+        <button onclick="togglePanicMode()" class="p-2 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 rounded-xl border border-slate-300 text-xs transition flex items-center gap-1.5" title="Modo Pánico (Ocultar al instante - Tecla ESC)">
+          <i class="fa-solid fa-shield-halved text-rose-600"></i>
+          <span class="hidden sm:inline font-bold text-rose-700">ESC</span>
+        </button>
+        
+        <div class="h-6 w-px bg-slate-200 mx-1"></div>
+
+        <div class="flex items-center gap-2 cursor-pointer p-1 rounded-xl hover:bg-slate-100 transition" onclick="openProfileModal()">
+          <img id="user-avatar-display" src="" class="w-8 h-8 rounded-lg object-cover border border-amber-500">
+          <div class="text-left hidden lg:block">
+            <p id="user-name-display" class="text-xs font-bold text-slate-800 leading-tight">Cargando...</p>
+            <p id="user-username-display" class="text-[10px] text-slate-500">@estudiante</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+      
+      <aside class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
+        <div class="p-3 border-b border-slate-200">
+          <button onclick="switchTab('notes')" class="w-full bg-white hover:bg-amber-50/50 text-slate-800 border border-slate-300 shadow-sm font-semibold rounded-xl px-3 py-2 text-xs flex items-center justify-between transition">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-plus text-amber-600"></i> Nueva Nota / Apunte
+            </span>
+            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">Ctrl+N</span>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4 text-xs">
+          <div>
+            <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Mis Cuadernos</span>
+              <i class="fa-solid fa-folder-closed"></i>
+            </div>
+            <nav class="space-y-0.5 mt-1">
+              <button onclick="switchTab('notes')" id="nav-btn-notes" class="nav-item active w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 text-slate-700 hover:bg-amber-100/60 transition font-medium">
+                <i class="fa-solid fa-file-pen text-amber-600"></i>
+                <span class="truncate">Apuntes de Clase</span>
+              </button>
+              <button onclick="switchTab('tasks')" id="nav-btn-tasks" class="nav-item w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:bg-amber-100/60 transition font-medium">
+                <i class="fa-solid fa-list-check text-blue-600"></i>
+                <span class="truncate">Tareas Pendientes</span>
+              </button>
+            </nav>
+          </div>
+
+          <div>
+            <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Notas Compartidas (Chat)</span>
+              <span class="bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">8h</span>
+            </div>
+            <nav class="space-y-0.5 mt-1">
+              <button onclick="switchTab('chat')" id="nav-btn-chat" class="nav-item w-full text-left px-3 py-2 rounded-xl flex items-center justify-between text-slate-600 hover:bg-amber-100/60 transition font-medium">
+                <span class="flex items-center gap-2 truncate">
+                  <i class="fa-solid fa-comments text-amber-600"></i>
+                  <span class="truncate">Discusiones (Chat 8h)</span>
+                </span>
+                <span id="unread-badge" class="hidden bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+              </button>
+            </nav>
+          </div>
+
+          <div>
+            <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Recursos y Sellos</span>
+            </div>
+            <nav class="space-y-0.5 mt-1">
+              <button onclick="switchTab('stories')" id="nav-btn-stories" class="nav-item w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:bg-amber-100/60 transition font-medium">
+                <i class="fa-solid fa-note-sticky text-emerald-600"></i>
+                <span>Post-its de Clase (8h)</span>
+              </button>
+              <button onclick="switchTab('stickers')" id="nav-btn-stickers" class="nav-item w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:bg-amber-100/60 transition font-medium">
+                <i class="fa-solid fa-icons text-purple-600"></i>
+                <span>Sellos & Stickers</span>
+              </button>
+              <button onclick="switchTab('network')" id="nav-btn-network" class="nav-item w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:bg-amber-100/60 transition font-medium">
+                <i class="fa-solid fa-laptop-code text-indigo-600"></i>
+                <span>Red del Salón</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <div class="p-3 border-t border-slate-200 bg-white text-[11px] text-slate-500 space-y-1">
+          <div class="flex items-center gap-1.5 text-emerald-600 font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sincronizado en Red
+          </div>
+          <p class="text-[10px] text-slate-400 truncate">Sincronización activa entre Chromebooks</p>
+        </div>
+      </aside>
+
+      <main class="flex-1 bg-white flex flex-col overflow-hidden relative">
+        
+        <!-- TAB 1: REAL NOTE EDITOR -->
+        <div id="tab-notes" class="tab-content flex-1 flex flex-col h-full notebook-paper p-6 overflow-y-auto">
+          <div class="max-w-3xl mx-auto w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4 my-2">
+            <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+              <input type="text" id="note-title" value="Apuntes de Geometría Analítica - Tema 2" class="text-xl font-bold text-slate-900 w-full focus:outline-none bg-transparent">
+              <span class="text-xs text-slate-400 shrink-0">Guardado local</span>
+            </div>
+            <div class="flex gap-2 text-slate-500 text-xs border-b border-slate-100 pb-2">
+              <button class="hover:bg-slate-100 p-1 rounded font-bold">B</button>
+              <button class="hover:bg-slate-100 p-1 rounded italic">I</button>
+              <button class="hover:bg-slate-100 p-1 rounded underline">U</button>
+              <span class="text-slate-300">|</span>
+              <button class="hover:bg-slate-100 p-1 rounded"><i class="fa-solid fa-list-ul"></i></button>
+              <button class="hover:bg-slate-100 p-1 rounded"><i class="fa-solid fa-highlighter text-amber-500"></i></button>
+            </div>
+            <textarea id="note-body" class="w-full h-80 focus:outline-none text-slate-800 text-sm leading-relaxed bg-transparent resize-none font-sans" placeholder="Escribe aquí tus apuntes escolares reales..."></textarea>
+            <div class="text-xs text-slate-400 flex justify-between pt-2 border-t border-slate-100">
+              <span>Palabras: <span id="word-count">42</span></span>
+              <span>Visibilidad: Solo mi Chromebook</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: TAREAS PENDIENTES -->
+        <div id="tab-tasks" class="tab-content flex-1 p-6 overflow-y-auto hidden">
+          <div class="max-w-2xl mx-auto space-y-4">
+            <h2 class="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-blue-600"></i> Lista de Deberes Escolásticos
+            </h2>
+            <div class="flex gap-2">
+              <input type="text" id="task-input" placeholder="Añadir nueva tarea..." class="flex-1 border border-slate-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <button onclick="addTask()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl transition">Añadir</button>
+            </div>
+            <ul id="task-list" class="space-y-2">
+              <li class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
+                <span class="flex items-center gap-2">
+                  <input type="checkbox" checked class="rounded text-amber-600 focus:ring-amber-500">
+                  <span class="line-through text-slate-400">Resolver guía de Trigonometría - Ejercicios 1 a 10</span>
+                </span>
+                <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Para Hoy</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- TAB 3: DISCUSIONES Y CHAT 8 HORAS -->
+        <div id="tab-chat" class="tab-content flex-1 flex h-full hidden overflow-hidden">
+          <div class="w-64 border-r border-slate-200 flex flex-col bg-slate-50 shrink-0">
+            <div class="p-3 border-b border-slate-200 bg-white">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+                <span>Compañeros de Estudio</span>
+                <span class="text-[10px] font-normal text-slate-400">Mensajes 8h</span>
+              </div>
+              <input type="text" id="search-friend-input" onkeyup="filterFriendsList()" placeholder="Buscar alumno..." class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none">
+            </div>
+            <div id="friends-list-container" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+          </div>
+
+          <div class="flex-1 flex flex-col bg-white overflow-hidden">
+            <div id="chat-header" class="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-3">
+                <img id="active-chat-avatar" src="https://placehold.co/100x100/d97706/ffffff?text=?" class="w-9 h-9 rounded-xl object-cover border border-amber-500">
+                <div>
+                  <h3 id="active-chat-name" class="text-xs font-bold text-slate-900">Selecciona un compañero</h3>
+                  <p id="active-chat-status" class="text-[10px] text-slate-500">Haz clic en un estudiante para iniciar consulta</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                  <i class="fa-solid fa-clock text-amber-600"></i> Autodestrucción 8 hrs
+                </span>
+              </div>
+            </div>
+
+            <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 bg-slate-50/50">
+              <div class="text-center py-10 text-slate-400 text-xs">
+                <i class="fa-solid fa-comments text-3xl mb-2 text-slate-300"></i>
+                <p>Selecciona a un compañero para conversar en privado.</p>
+                <p class="text-[10px] text-slate-400 mt-1">Todos los mensajes se borran automáticamente tras 8 horas.</p>
+              </div>
+            </div>
+
+            <!-- EMOJI & STICKER QUICK PANEL -->
+            <div id="sticker-picker-drawer" class="hidden border-t border-slate-200 bg-slate-100 p-3 max-h-48 overflow-y-auto custom-scrollbar">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-[11px] font-bold text-slate-700">Tus Sellos y Stickers</span>
+                <button onclick="toggleStickerPicker()" class="text-slate-400 hover:text-slate-600 text-xs"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div id="picker-stickers-grid" class="grid grid-cols-5 gap-2"></div>
+            </div>
+
+            <div class="p-3 border-t border-slate-200 bg-white shrink-0 space-y-2">
+              <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex items-center gap-2">
+                <button type="button" onclick="toggleStickerPicker()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl border border-slate-200 text-xs transition" title="Insertar Sticker">
+                  <i class="fa-solid fa-icons text-purple-600"></i>
+                </button>
+                <input type="text" id="chat-input" placeholder="Escribir mensaje escolar..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white p-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center w-10 h-10 shadow-sm">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: POST-ITS (HISTORIAS 8 HORAS) -->
+        <div id="tab-stories" class="tab-content flex-1 p-6 overflow-y-auto hidden bg-slate-100/50">
+          <div class="max-w-4xl mx-auto space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-4">
+              <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <i class="fa-solid fa-note-sticky text-emerald-600"></i> Tablón de Post-its de Clase (Historias)
+                </h2>
+                <p class="text-xs text-slate-500">Publicaciones visibles para todo el grupo que expiran exactamente a las 8 horas.</p>
+              </div>
+              <button onclick="openNewStoryModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Nuevo Post-it
+              </button>
+            </div>
+            <div id="stories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          </div>
+        </div>
+
+        <!-- TAB 5: SELLOS Y STICKERS -->
+        <div id="tab-stickers" class="tab-content flex-1 p-6 overflow-y-auto hidden">
+          <div class="max-w-3xl mx-auto space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-4">
+              <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <i class="fa-solid fa-icons text-purple-600"></i> Colección de Sellos y Stickers
+                </h2>
+                <p class="text-xs text-slate-500">Crea stickers desde las imágenes de tu Chromebook o guarda los que te manden tus amigos.</p>
+              </div>
+              <label class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow cursor-pointer flex items-center gap-2">
+                <i class="fa-solid fa-file-image"></i> Crear desde Archivos
+                <input type="file" accept="image/*" onchange="createStickerFromFile(event)" class="hidden">
+              </label>
+            </div>
+            <div id="my-stickers-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4"></div>
+          </div>
+        </div>
+
+        <!-- TAB 6: RED DEL SALÓN -->
+        <div id="tab-network" class="tab-content flex-1 p-6 overflow-y-auto hidden">
+          <div class="max-w-3xl mx-auto space-y-6">
+            <div class="border-b border-slate-200 pb-4">
+              <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-laptop-code text-indigo-600"></i> Red de Chromebooks Conectadas
+              </h2>
+              <p class="text-xs text-slate-500">Encuentra a tus amigos registrados en el aula y conéctate directamente con ellos.</p>
+            </div>
+            <div id="network-users-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- NEW STORY MODAL -->
+  <div id="new-story-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Publicar Post-it de Clase (Duración 8h)</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Texto de la nota</label>
+          <textarea id="story-text-input" rows="3" placeholder="¿Qué quieres compartir hoy con el salón?..." class="w-full border border-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Imagen (Opcional desde Chromebook)</label>
+          <input type="file" id="story-file-input" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeNewStoryModal()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold">Cancelar</button>
+        <button onclick="submitNewStory()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow">Publicar Post-it</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'smartnotes-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let app, auth, db;
+    let currentUser = null;
+    let currentAuthUser = null;
+    let activeChatUser = null;
+
+    let allUsers = [];
+    let allMessages = [];
+    let allStories = [];
+
+    async function initFirebase() {
+      if (!firebaseConfig) {
+        checkSavedSession();
+        return;
+      }
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        if (initialAuthToken) {
+          await signInWithCustomToken(auth, initialAuthToken);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentAuthUser = user;
+            checkSavedSession();
+          }
+        });
+      } catch (err) {
+        console.error("Error Firebase:", err);
+        checkSavedSession();
+      }
+    }
+
+    function checkSavedSession() {
+      const savedUser = localStorage.getItem('smartnotes_user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        if (!currentUser.myStickers) currentUser.myStickers = [];
+        document.getElementById('unlock-user-name').innerText = `Hola, ${currentUser.name}`;
+        document.getElementById('unlock-modal').classList.remove('hidden');
+      } else {
+        document.getElementById('auth-modal').classList.remove('hidden');
+      }
+    }
+
+    window.handleAuthSubmit = async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('auth-name').value.trim();
+      const username = document.getElementById('auth-username').value.trim().toLowerCase().replace(/\s+/g, '_');
+      const password = document.getElementById('auth-password').value;
+      const avatarImg = document.getElementById('avatar-preview-img');
+      let avatarUrl = avatarImg.src || 'https://placehold.co/100x100/d97706/ffffff?text=' + name.charAt(0).toUpperCase();
+
+      if (!name || !username || !password) return;
+
+      if (db) {
+        try {
+          const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', username);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const existingData = userSnap.data();
+            if (existingData.password && existingData.password !== password) {
+              showToast('❌ Contraseña incorrecta para este alumno');
+              return;
+            }
+            if (avatarImg.classList.contains('hidden') && existingData.avatar) {
+              avatarUrl = existingData.avatar;
+            }
+          }
+        } catch (err) {
+          console.error("Error de verificación:", err);
+        }
+      }
+
+      currentUser = {
+        uid: currentAuthUser ? currentAuthUser.uid : 'user_' + Date.now(),
+        name: name,
+        username: username,
+        password: password,
+        avatar: avatarUrl,
+        myStickers: [
+          'https://placehold.co/120x120/f59e0b/ffffff?text=Excelente!',
+          'https://placehold.co/120x120/10b981/ffffff?text=Aprobado',
+          'https://placehold.co/120x120/6366f1/ffffff?text=Completado'
+        ],
+        lastSeen: Date.now()
+      };
+
+      localStorage.setItem('smartnotes_user', JSON.stringify(currentUser));
+      document.getElementById('auth-modal').classList.add('hidden');
+      showMainUI();
+      await syncUserProfile();
+      listenToAppData();
+      showToast('Bienvenido a tu Cuaderno SmartNotes');
+    };
+
+    window.handleUnlockSubmit = async function(e) {
+      e.preventDefault();
+      const pass = document.getElementById('unlock-password').value;
+      if (!currentUser) return;
+
+      if (currentUser.password && currentUser.password !== pass) {
+        showToast('❌ Contraseña incorrecta');
+        return;
+      }
+
+      document.getElementById('unlock-password').value = '';
+      document.getElementById('unlock-modal').classList.add('hidden');
+      showMainUI();
+      syncUserProfile();
+      listenToAppData();
+      showToast('Cuaderno Desbloqueado');
+    };
+
+    window.lockApp = function() {
+      document.getElementById('main-ui').classList.add('hidden');
+      document.getElementById('unlock-password').value = '';
+      if (currentUser) {
+        document.getElementById('unlock-user-name').innerText = `Hola, ${currentUser.name}`;
+      }
+      document.getElementById('unlock-modal').classList.remove('hidden');
+    };
+
+    window.switchUser = function() {
+      localStorage.removeItem('smartnotes_user');
+      currentUser = null;
+      activeChatUser = null;
+      document.getElementById('unlock-modal').classList.add('hidden');
+      document.getElementById('main-ui').classList.add('hidden');
+      document.getElementById('auth-modal').classList.remove('hidden');
+    };
+
+    window.togglePanicMode = function() {
+      const panicScreen = document.getElementById('panic-screen');
+      panicScreen.classList.toggle('hidden');
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') togglePanicMode();
+    });
+
+    window.switchTab = function(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'bg-amber-100/60', 'font-bold'));
+
+      const activeTab = document.getElementById(`tab-${tabName}`);
+      const activeNavBtn = document.getElementById(`nav-btn-${tabName}`);
+
+      if (activeTab) activeTab.classList.remove('hidden');
+      if (activeNavBtn) activeNavBtn.classList.add('bg-amber-100/60', 'font-bold');
+
+      if (tabName === 'stickers') renderMyStickers();
+      if (tabName === 'stories') renderStories();
+      if (tabName === 'network') renderNetworkUsers();
+    };
+
+    function showMainUI() {
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('user-name-display').innerText = currentUser.name;
+      document.getElementById('user-username-display').innerText = `@${currentUser.username}`;
+      document.getElementById('user-avatar-display').src = currentUser.avatar;
+    }
+
+    window.previewAuthAvatar = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('avatar-preview-img');
+          img.src = e.target.result;
+          img.classList.remove('hidden');
+          document.getElementById('avatar-placeholder-icon').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    window.openProfileModal = function() {
+      document.getElementById('edit-avatar-preview').src = currentUser.avatar;
+      document.getElementById('edit-profile-modal').classList.remove('hidden');
+    };
+
+    window.closeProfileModal = function() {
+      document.getElementById('edit-profile-modal').classList.add('hidden');
+    };
+
+    window.updateProfileAvatar = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          currentUser.avatar = e.target.result;
+          localStorage.setItem('smartnotes_user', JSON.stringify(currentUser));
+          document.getElementById('user-avatar-display').src = currentUser.avatar;
+          document.getElementById('edit-avatar-preview').src = currentUser.avatar;
+          await syncUserProfile();
+          showToast('Foto de perfil actualizada');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    async function syncUserProfile() {
+      if (!currentUser || !db) return;
+      try {
+        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.username);
+        await setDoc(userDocRef, {
+          uid: currentUser.uid,
+          name: currentUser.name,
+          username: currentUser.username,
+          password: currentUser.password,
+          avatar: currentUser.avatar,
+          myStickers: currentUser.myStickers || [],
+          lastSeen: Date.now()
+        }, { merge: true });
+      } catch (err) {
+        console.error("Sincronización perfil fallo:", err);
+      }
+    }
+
+    function listenToAppData() {
+      if (!db) return;
+
+      const usersCol = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+      onSnapshot(usersCol, (snapshot) => {
+        allUsers = [];
+        snapshot.forEach(doc => allUsers.push(doc.data()));
+        renderFriendsList();
+        renderNetworkUsers();
+      }, err => console.warn("Sync usuarios:", err));
+
+      const messagesCol = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+      onSnapshot(messagesCol, (snapshot) => {
+        const now = Date.now();
+        allMessages = [];
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          if (now - msg.timestamp <= EIGHT_HOURS_MS) allMessages.push(msg);
+        });
+        if (activeChatUser) renderChatMessages();
+      }, err => console.warn("Sync mensajes:", err));
+
+      const storiesCol = collection(db, 'artifacts', appId, 'public', 'data', 'stories');
+      onSnapshot(storiesCol, (snapshot) => {
+        const now = Date.now();
+        allStories = [];
+        snapshot.forEach(doc => {
+          const st = doc.data();
+          if (now - st.timestamp <= EIGHT_HOURS_MS) allStories.push(st);
+        });
+        renderStories();
+      }, err => console.warn("Sync historias:", err));
+    }
+
+    function renderFriendsList() {
+      const container = document.getElementById('friends-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const filtered = allUsers.filter(u => u.username !== currentUser.username);
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">Sin otros compañeros registrados en la red.</div>`;
+        return;
+      }
+
+      filtered.forEach(u => {
+        const isActive = activeChatUser && activeChatUser.username === u.username;
+        const div = document.createElement('div');
+        div.className = `flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition ${isActive ? 'bg-amber-100/80 border border-amber-300' : 'hover:bg-slate-100'}`;
+        div.onclick = () => selectChatUser(u);
+        div.innerHTML = `
+          <img src="${u.avatar}" class="w-8 h-8 rounded-lg object-cover border border-slate-300">
+          <div class="flex-1 truncate">
+            <h4 class="text-xs font-bold text-slate-800 truncate">${u.name}</h4>
+            <p class="text-[10px] text-slate-400">@${u.username}</p>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function selectChatUser(user) {
+      activeChatUser = user;
+      document.getElementById('active-chat-name').innerText = user.name;
+      document.getElementById('active-chat-status').innerText = `@${user.username} • Consulta Activa`;
+      document.getElementById('active-chat-avatar').src = user.avatar;
+      renderFriendsList();
+      renderChatMessages();
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chat-messages');
+      if (!container || !activeChatUser) return;
+
+      container.innerHTML = '';
+      const chatRoomId = [currentUser.username, activeChatUser.username].sort().join('_');
+      const roomMessages = allMessages.filter(m => m.roomId === chatRoomId).sort((a, b) => a.timestamp - b.timestamp);
+
+      if (roomMessages.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 text-slate-400 text-xs">
+            <p>Inicia la conversación escolar con ${activeChatUser.name}.</p>
+            <p class="text-[10px] text-slate-400 mt-1">Los mensajes expiran automáticamente en 8 horas.</p>
+          </div>
+        `;
+        return;
+      }
+
+      roomMessages.forEach(msg => {
+        const isMine = msg.sender === currentUser.username;
+        const msgTime = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const hoursLeft = Math.max(0, Math.ceil((EIGHT_HOURS_MS - (Date.now() - msg.timestamp)) / (1000 * 60 * 60)));
+
+        const div = document.createElement('div');
+        div.className = `flex flex-col ${isMine ? 'items-end' : 'items-start'} my-1`;
+
+        let contentHtml = `<p class="text-xs leading-relaxed">${msg.text}</p>`;
+        if (msg.sticker) {
+          contentHtml = `
+            <div class="space-y-1">
+              <img src="${msg.sticker}" class="w-28 h-28 object-contain rounded-lg">
+              ${!isMine ? `<button onclick="saveStickerFromChat('${msg.sticker}')" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-lg border border-purple-300 hover:bg-purple-200"><i class="fa-solid fa-bookmark"></i> Guardar Sticker</button>` : ''}
+            </div>
+          `;
+        }
+
+        div.innerHTML = `
+          <div class="max-w-[75%] p-3 rounded-2xl text-xs ${isMine ? 'bg-amber-500 text-white rounded-br-none shadow-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-sm'}">
+            ${contentHtml}
+            <div class="flex items-center justify-between gap-2 mt-1 pt-1 border-t ${isMine ? 'border-amber-400/50 text-amber-100' : 'border-slate-100 text-slate-400'} text-[9px]">
+              <span>${msgTime}</span>
+              <span><i class="fa-solid fa-clock mr-0.5"></i> Quedan ${hoursLeft}h</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    window.sendChatMessage = async function(e) {
+      e.preventDefault();
+      if (!activeChatUser) {
+        showToast('Selecciona a un compañero para enviar mensaje');
+        return;
+      }
+
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatRoomId = [currentUser.username, activeChatUser.username].sort().join('_');
+      const newMsg = {
+        roomId: chatRoomId,
+        sender: currentUser.username,
+        text: text,
+        timestamp: Date.now()
+      };
+
+      input.value = '';
+
+      if (db) {
+        try {
+          const messagesCol = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+          await addDoc(messagesCol, newMsg);
+        } catch (err) {
+          console.error("Error al enviar mensaje:", err);
+        }
+      } else {
+        allMessages.push(newMsg);
+        renderChatMessages();
+      }
+    };
+
+    window.toggleStickerPicker = function() {
+      const drawer = document.getElementById('sticker-picker-drawer');
+      drawer.classList.toggle('hidden');
+      if (!drawer.classList.contains('hidden')) renderPickerStickers();
+    };
+
+    function renderPickerStickers() {
+      const grid = document.getElementById('picker-stickers-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      (currentUser.myStickers || []).forEach(st => {
+        const img = document.createElement('img');
+        img.src = st;
+        img.className = 'w-12 h-12 object-contain bg-white rounded-lg border border-slate-300 cursor-pointer hover:scale-105 transition p-1';
+        img.onclick = () => sendStickerMessage(st);
+        grid.appendChild(img);
+      });
+    }
+
+    async function sendStickerMessage(stickerUrl) {
+      if (!activeChatUser) return;
+      const chatRoomId = [currentUser.username, activeChatUser.username].sort().join('_');
+      const newMsg = {
+        roomId: chatRoomId,
+        sender: currentUser.username,
+        sticker: stickerUrl,
+        timestamp: Date.now()
+      };
+
+      toggleStickerPicker();
+
+      if (db) {
+        try {
+          const messagesCol = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+          await addDoc(messagesCol, newMsg);
+        } catch (err) {
+          console.error("Error envío sticker:", err);
+        }
+      } else {
+        allMessages.push(newMsg);
+        renderChatMessages();
+      }
+    }
+
+    window.saveStickerFromChat = async function(stickerUrl) {
+      if (!currentUser.myStickers.includes(stickerUrl)) {
+        currentUser.myStickers.push(stickerUrl);
+        localStorage.setItem('smartnotes_user', JSON.stringify(currentUser));
+        await syncUserProfile();
+        showToast('¡Sticker guardado en tus sellos!');
+      } else {
+        showToast('El sticker ya existe en tu colección');
+      }
+    };
+
+    window.createStickerFromFile = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          const newSticker = e.target.result;
+          currentUser.myStickers.push(newSticker);
+          localStorage.setItem('smartnotes_user', JSON.stringify(currentUser));
+          await syncUserProfile();
+          renderMyStickers();
+          showToast('Sello/Sticker creado con éxito');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    function renderMyStickers() {
+      const grid = document.getElementById('my-stickers-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      (currentUser.myStickers || []).forEach((st, idx) => {
+        const div = document.createElement('div');
+        div.className = 'p-2 bg-white border border-slate-200 rounded-xl flex flex-col items-center gap-2 shadow-sm relative group';
+        div.innerHTML = `
+          <img src="${st}" class="w-16 h-16 object-contain">
+          <span class="text-[10px] text-slate-400 font-bold">Sello #${idx+1}</span>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    window.openNewStoryModal = function() {
+      document.getElementById('new-story-modal').classList.remove('hidden');
+    };
+
+    window.closeNewStoryModal = function() {
+      document.getElementById('new-story-modal').classList.add('hidden');
+    };
+
+    window.submitNewStory = async function() {
+      const text = document.getElementById('story-text-input').value.trim();
+      const fileInput = document.getElementById('story-file-input');
+
+      if (!text && fileInput.files.length === 0) {
+        showToast('Escribe algo o selecciona una imagen');
+        return;
+      }
+
+      let imageBase64 = null;
+      if (fileInput.files[0]) {
+        imageBase64 = await new Promise((res) => {
+          const r = new FileReader();
+          r.onload = (e) => res(e.target.result);
+          r.readAsDataURL(fileInput.files[0]);
+        });
+      }
+
+      const newStory = {
+        author: currentUser.name,
+        username: currentUser.username,
+        avatar: currentUser.avatar,
+        text: text,
+        image: imageBase64,
+        timestamp: Date.now()
+      };
+
+      if (db) {
+        try {
+          const storiesCol = collection(db, 'artifacts', appId, 'public', 'data', 'stories');
+          await addDoc(storiesCol, newStory);
+        } catch (err) {
+          console.error("Error post-it:", err);
+        }
+      } else {
+        allStories.push(newStory);
+        renderStories();
+      }
+
+      document.getElementById('story-text-input').value = '';
+      fileInput.value = '';
+      closeNewStoryModal();
+      showToast('Post-it publicado para la clase');
+    };
+
+    function renderStories() {
+      const grid = document.getElementById('stories-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (allStories.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-note-sticky text-3xl mb-2 text-slate-300"></i>
+            <p>No hay post-its activos en el salón.</p>
+            <p class="text-[10px] text-slate-400">Publica uno para compartir apuntes de 8 horas.</p>
+          </div>
+        `;
+        return;
+      }
+
+      allStories.forEach(s => {
+        const hoursLeft = Math.max(0, Math.ceil((EIGHT_HOURS_MS - (Date.now() - s.timestamp)) / (1000 * 60 * 60)));
+        const div = document.createElement('div');
+        div.className = 'p-4 bg-amber-50/80 border border-amber-200 rounded-2xl shadow-sm space-y-3 relative font-handwriting text-slate-800 text-base';
+        
+        let imgHtml = s.image ? `<img src="${s.image}" class="w-full h-36 object-cover rounded-xl border border-amber-200">` : '';
+
+        div.innerHTML = `
+          <div class="flex items-center justify-between font-sans border-b border-amber-200/60 pb-2">
+            <div class="flex items-center gap-2">
+              <img src="${s.avatar}" class="w-6 h-6 rounded-lg object-cover">
+              <span class="text-xs font-bold text-slate-900">${s.author}</span>
+            </div>
+            <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-clock"></i> Expira en ${hoursLeft}h</span>
+          </div>
+          <p class="leading-snug">${s.text || ''}</p>
+          ${imgHtml}
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function renderNetworkUsers() {
+      const grid = document.getElementById('network-users-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      allUsers.forEach(u => {
+        const isMe = u.username === currentUser.username;
+        const div = document.createElement('div');
+        div.className = 'p-4 bg-white border border-slate-200 rounded-2xl flex items-center gap-3 shadow-sm';
+        div.innerHTML = `
+          <img src="${u.avatar}" class="w-12 h-12 rounded-xl object-cover border border-amber-500">
+          <div class="flex-1 truncate">
+            <h4 class="text-xs font-bold text-slate-900 truncate">${u.name} ${isMe ? '(Tú)' : ''}</h4>
+            <p class="text-[10px] text-slate-400">@${u.username}</p>
+            <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Conectado
+            </span>
+          </div>
+          ${!isMe ? `<button onclick="switchTab('chat'); selectChatUserByUsername('${u.username}')" class="p-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl text-xs"><i class="fa-solid fa-message"></i></button>` : ''}
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    window.selectChatUserByUsername = function(username) {
+      const u = allUsers.find(x => x.username === username);
+      if (u) selectChatUser(u);
+    };
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 animate-bounce pointer-events-auto';
+      toast.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> ${msg}`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    window.addTask = function() {
+      const input = document.getElementById('task-input');
+      if (!input.value.trim()) return;
+      const ul = document.getElementById('task-list');
+      const li = document.createElement('li');
+      li.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700';
+      li.innerHTML = `
+        <span class="flex items-center gap-2">
+          <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
+          <span>${input.value.trim()}</span>
+        </span>
+        <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Pendiente</span>
+      `;
+      ul.appendChild(li);
+      input.value = '';
+    };
+
+    const noteBody = document.getElementById('note-body');
+    if (noteBody) {
+      noteBody.addEventListener('input', () => {
+        const words = noteBody.value.trim().split(/\s+/).filter(Boolean).length;
+        document.getElementById('word-count').innerText = words;
+      });
+    }
+
+    window.onload = function() {
+      initFirebase();
+    };
+  </script>
+</body>
+</html>
